@@ -18,6 +18,7 @@ import sqlite3
 import os
 import re
 import json
+import pytz
 
 # Connect to SQLite database
 
@@ -857,10 +858,29 @@ def run_recurring_lists_logic(args, api, connection, task, task_items, task_item
                         #             child_item['r_tag'] = 1
 
                         # If alternative end of day, fix due date if needed
+
+                        
+                        if args.timezone is not None:
+                            timezone = pytz.timezone(args.timezone)
+                        else:
+                            timezone = None
                         if args.end is not None:
                             # Determine current hour
-                            t = datetime.today()
+                            if timezone is not None:
+                                t = datetime.now(timezone)
+                            else:
+                                t = datetime.now()
                             current_hour = t.hour
+
+                            logging.debug("Checking task: %s" % task.content)   
+                            logging.debug("Current hour: %s" % current_hour)
+                            logging.debug("Task due date: %s" % task.due.date)
+                            logging.debug("DB due date: %s" % db_task_due_date)
+                            logging.debug("End of day: %s" % args.end)
+
+
+
+
 
                             # Check if current time is before our end-of-day
                             if (args.end - current_hour) > 0:
@@ -1456,6 +1476,8 @@ def main():
         '-r', '--regeneration', help='[CURRENTLY DISABLED FEATURE] enable regeneration of sub-tasks in recurring lists. Chose overall mode: 0 - regen off, 1 - regen all (default),  2 - regen only if all sub-tasks are completed. Task labels can be used to overwrite this mode.', nargs='?', const='1', default=None, type=int)
     parser.add_argument(
         '-e', '--end', help='enable alternative end-of-day time instead of default midnight. Enter a number from 1 to 24 to define which hour is used.', type=int)
+    parser.add_argument(
+        '-z', '--timezone', help='Use different timezone than default on server', default=None, type=str)
     parser.add_argument(
         '-d', '--delay', help='specify the delay in seconds between syncs (default 5).', default=5, type=int)
     parser.add_argument(
